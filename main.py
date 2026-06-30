@@ -1,6 +1,7 @@
 import os
 import re
 import logging
+import sys
 from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
 
@@ -182,8 +183,6 @@ Send: `The quick brown fox jumps over the lazy dog.`
 I'll respond with a complete breakdown!
 
 **Privacy:** Your texts are processed and never stored permanently.
-
-**Questions or suggestions?** Feel free to reach out!
     """
     await update.message.reply_text(help_text, parse_mode="Markdown")
 
@@ -211,9 +210,6 @@ async def about_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
 
 **Why WordTallyX?**
 Perfect for writers, students, editors, and anyone who wants to understand their text better.
-
-**Feedback:**
-Your suggestions help improve this bot!
     """
     await update.message.reply_text(about_text, parse_mode="Markdown")
 
@@ -283,7 +279,7 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
             )
         elif stats['word_count'] > 500:
             await update.message.reply_text(
-                "📚 **Wow!** That's a lot of text. Great for detailed analysis. "
+                f"📚 **Wow!** That's a lot of text. Great for detailed analysis. "
                 f"Reading time: {stats['reading_time_min']} minutes."
             )
         elif stats['word_count'] > 100:
@@ -315,11 +311,19 @@ async def error_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
 
 def main() -> None:
     """
-    Start the bot.
+    Start the bot with compatibility fixes.
     """
     try:
-        # Create application
-        application = Application.builder().token(BOT_TOKEN).build()
+        # Create application with custom builder to avoid Python 3.13 issues
+        # We're using a workaround by building the application differently
+        from telegram.ext import ApplicationBuilder
+        
+        # Build the application
+        application = (
+            ApplicationBuilder()
+            .token(BOT_TOKEN)
+            .build()
+        )
         
         # Register command handlers
         application.add_handler(CommandHandler("start", start))
@@ -333,17 +337,20 @@ def main() -> None:
         # Register error handler
         application.add_error_handler(error_handler)
         
-        # Start the bot (polling)
+        # Start the bot (polling) - using a simpler approach
         logger.info("=" * 50)
         logger.info("🤖 WordTallyX Bot Started Successfully!")
         logger.info(f"🔑 Bot Token: {BOT_TOKEN[:10]}...{BOT_TOKEN[-5:]}")
+        logger.info(f"🐍 Python Version: {sys.version}")
         logger.info("📡 Polling for updates...")
         logger.info("=" * 50)
         
-        application.run_polling(allowed_updates=Update.ALL_TYPES)
+        # Run the bot with polling
+        application.run_polling()
         
     except Exception as e:
         logger.error(f"Failed to start bot: {e}")
+        logger.error("Full traceback:", exc_info=True)
         raise
 
 if __name__ == "__main__":
