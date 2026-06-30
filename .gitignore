@@ -43,3 +43,6 @@ Thumbs.db
 
 # Railway
 .railway/
+
+# mise
+.mise.toml
